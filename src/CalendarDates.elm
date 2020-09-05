@@ -1,4 +1,4 @@
-module Calendar exposing (days, weeks, Day, Week)
+module CalendarDates exposing (days, weeks, Day, Week)
 
 {-| Generate date ranges.
 
@@ -6,6 +6,7 @@ module Calendar exposing (days, weeks, Day, Week)
 
 -}
 
+import Calendar
 import Date exposing (Date, Interval)
 import Derberos.Date.Utils exposing (getNextMonth, getPrevWeekday, numberOfDaysInMonth)
 import List.Extra
@@ -15,7 +16,7 @@ import Time exposing (Month, Weekday)
 {-| Day
 -}
 type alias Day =
-    { date : Date
+    { date : Calendar.Date
     , month : Order
     }
 
@@ -62,7 +63,10 @@ emptyWeek : Week
 emptyWeek =
     let
         d =
-            { date = Date.fromRataDie 0
+            { date =
+                0
+                    |> Time.millisToPosix
+                    |> Calendar.fromPosix
             , month = EQ
             }
     in
@@ -129,7 +133,13 @@ days wd month year =
         ++ padRight
         |> List.map
             (\date ->
-                { date = date
+                { date =
+                    Calendar.RawDate
+                        (Date.year date)
+                        (Date.month date)
+                        (Date.day date)
+                        |> Calendar.fromRawParts
+                        |> Maybe.withDefault default
                 , month =
                     if Date.month date == month then
                         EQ
@@ -143,6 +153,11 @@ days wd month year =
             )
 
 
+default : Calendar.Date
+default =
+    0 |> Time.millisToPosix |> Calendar.fromPosix
+
+
 {-| Days split into weeks.
 -}
 weeks : Weekday -> Month -> Int -> List Week
@@ -154,7 +169,7 @@ weeks wd month year =
                 xs
                     |> List.foldl
                         (\day ->
-                            case Date.weekday day.date of
+                            case Calendar.getWeekday day.date of
                                 Time.Mon ->
                                     \week ->
                                         { week | mon = day }
